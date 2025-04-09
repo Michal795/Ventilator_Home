@@ -1,34 +1,59 @@
-import machine, onewire, ds18x20, time
 from machine import Pin
+from time import sleep
+import dht
 
-def teplomer(pin_port, poradove_c, kompenzacia):
-    ds_pin = machine.Pin(pin_port)
-    ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
-    ds_sensor.convert_temp()
-    roms = ds_sensor.scan()
-    print('Found DS devices: ', roms, f"\nOn pin{pin_port}")
-    teplota = ds_sensor.read_temp(roms[poradove_c])
-    return (teplota + kompenzacia)
-
-def spinac(temp_inside, temp_outside, hystereza):
-    if (temp_outside - (hystereza/2)) > temp_inside:
-        my_value = 0
-    elif (temp_outside + (hystereza/2)) < temp_inside:
-        my_value = 1
-    return my_value
-
-hystereza = 5
-value_moja = 0
-
+inside = dht.DHT22(Pin(22))
+outside = dht.DHT22(Pin(21))
 spinac = machine.Pin(18, Pin.OUT)
-sensor1_waterproof = bytearray(b'(\xffQ\xcb\xc1\x17\x04\xa6')
-sensor2_normal = bytearray(b'(\xff\xc6uQ\x17\x04\xec')
+hystereza_temp = 3
+hystereza_hum = 5
+hodnota_temp = 0
+hodnota_hum = 0
+norma_hum = 80
+
+
+def spinac_def(temp_inside, temp_outside, hystereza, pred_stav):
+    spinac_hodnota = pred_stav
+    if (temp_inside + (hystereza/2)) > temp_outside:
+        spinac_hodnota = 0
+    elif (temp_inside - (hystereza/2)) < temp_outside:
+        spinac_hodnota = 1
+    return  spinac_hodnota
+
+
+def spinac_def2(hystereza, humidity, pred_stav, norma):
+    spinac_hodnota = pred_stav
+    if (norma - (hystereza/2)) > humidity:
+        spinac_hodnota = 1
+    elif (norma + (hystereza/2)) < humidity:
+        spinac_hodnota = 0
+    return spinac_hodnota
+
 
 while True:
-    #current_date = datetime.datetime.now().month
-    temp_outside = teplomer(22, 0, -0.5)
-    temp_inside = teplomer(22, 1, 0)
-    print("Inside:", temp_inside)
-    print("Outside:", temp_outside)
-    value_moja = spinac(temp_inside, temp_outside, hystereza)
-    spinac.value(value_moja)
+    sleep(1)
+    inside.measure()
+    outside.measure()
+    temp_inside = float(inside.temperature())
+    temp_outside = float(outside.temperature())
+    hum_outside = float(outside.humidity())
+    print("Inside temp:", temp_inside)
+    print("Outside temp:", temp_outside)
+    print("Outside humidity:", hum_outside)
+    hodnota_temp = spinac_def(temp_inside, temp_outside, hystereza_temp, hodnota_temp)
+    hodnota_hum = spinac_def2(hystereza_hum, hum_outside, hodnota_hum, norma_hum)
+    
+    if hodnota_temp == 1 and hodnota_hum == 1:
+        hodnota = 1
+    else:
+        hodnota = 0
+        
+    spinac.value(hodnota)
+    print(f"Hodnota temp: {hodnota_temp}\nHodnota hum: {hodnota_hum}")
+    print(f"spinac: {hodnota}")
+    
+    ###print('Temperature: %3.1f C' %temp_inside)
+    ###print('Humidity: %3.1f %%' %hum_outside)
+    #hodnota = spinac_def(temp_inside, temp_outside, hystereza)
+
+

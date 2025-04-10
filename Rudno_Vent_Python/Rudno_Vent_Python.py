@@ -1,12 +1,13 @@
-from machine import Pin
+from machine import Pin, PWM
 from time import sleep
 import dht
 
 inside = dht.DHT22(Pin(22))
 outside = dht.DHT22(Pin(21))
-spinac = machine.Pin(18, Pin.OUT)
-hystereza_temp = 3
-hystereza_hum = 5
+spinac = PWM(18, freq=80, duty=0) #pwm output
+#spinac = machine.Pin(18, Pin.OUT)
+hystereza_temp = 2
+hystereza_hum = 6
 hodnota_temp = 0
 hodnota_hum = 0
 norma_hum = 80
@@ -14,10 +15,18 @@ norma_hum = 80
 
 def spinac_def(temp_inside, temp_outside, hystereza, pred_stav):
     spinac_hodnota = pred_stav
-    if (temp_inside + (hystereza/2)) > temp_outside:
-        spinac_hodnota = 0
-    elif (temp_inside - (hystereza/2)) < temp_outside:
-        spinac_hodnota = 1
+    if month in range(5, 9): #leto
+        if (temp_inside + (hystereza/2)) < temp_outside:
+            spinac_hodnota = 0
+        elif (temp_inside - (hystereza/2)) > temp_outside:
+            spinac_hodnota = 1
+        else:
+            pwm_duty = ((temp_outside - (temp_inside - (hystereza/2)))/hystereza)*1024 # este treba zakomponovat predoslu hodnotu spinaca
+    else: #zima
+        if (temp_inside + (hystereza/2)) > temp_outside:
+            spinac_hodnota = 0
+        elif (temp_inside - (hystereza/2)) < temp_outside:
+            spinac_hodnota = 1
     return  spinac_hodnota
 
 
@@ -49,8 +58,7 @@ while True:
         hodnota = 0
         
     spinac.value(hodnota)
-    print(f"Hodnota temp: {hodnota_temp}\nHodnota hum: {hodnota_hum}")
-    print(f"spinac: {hodnota}")
+    print(f"Hodnota temp: {hodnota_temp}\nHodnota hum: {hodnota_hum}\nSpinac: {hodnota}")
     
     ###print('Temperature: %3.1f C' %temp_inside)
     ###print('Humidity: %3.1f %%' %hum_outside)

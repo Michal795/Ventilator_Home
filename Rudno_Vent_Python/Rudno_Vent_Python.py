@@ -26,9 +26,9 @@ def spinac_temp(temp_inside, temp_outside, hystereza, pred_stav):
         pwm_value = 1024
     else:
         if pred_stav == 0:
-            pwm_value = ((temp_outside - (temp_inside - (hystereza/2))) / hystereza) * 1024
+            pwm_value = ((temp_outside - (temp_inside - (hystereza/2))) / hystereza)**2 * 1024
         elif pred_stav == 1:
-            pwm_value = 1024 - (((temp_outside - (temp_inside - (hystereza/2))) / hystereza) * 1024)
+            pwm_value = 1024 - (((temp_outside - (temp_inside - (hystereza/2))) / hystereza)**2 * 1024)
     return spinac_hodnota, int(round(pwm_value, 0))
 
 

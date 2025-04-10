@@ -12,16 +12,16 @@ hodnota_hum = 0
 norma_hum = 80
 
 
-def spinac_def(temp_inside, temp_outside, hystereza, pred_stav):
+def spinac_temp(temp_inside, temp_outside, hystereza, pred_stav):
     spinac_hodnota = pred_stav
-    if (temp_inside + (hystereza/2)) > temp_outside:
+    if (temp_inside + (hystereza/2)) < temp_outside:
         spinac_hodnota = 0
-    elif (temp_inside - (hystereza/2)) < temp_outside:
+    elif (temp_inside - (hystereza/2)) > temp_outside:
         spinac_hodnota = 1
     return  spinac_hodnota
 
 
-def spinac_def2(hystereza, humidity, pred_stav, norma):
+def spinac_hum(hystereza, humidity, pred_stav, norma):
     spinac_hodnota = pred_stav
     if (norma - (hystereza/2)) > humidity:
         spinac_hodnota = 1
@@ -40,8 +40,8 @@ while True:
     print("Inside temp:", temp_inside)
     print("Outside temp:", temp_outside)
     print("Outside humidity:", hum_outside)
-    hodnota_temp = spinac_def(temp_inside, temp_outside, hystereza_temp, hodnota_temp)
-    hodnota_hum = spinac_def2(hystereza_hum, hum_outside, hodnota_hum, norma_hum)
+    hodnota_temp = spinac_temp(temp_inside, temp_outside, hystereza_temp, hodnota_temp)
+    hodnota_hum = spinac_hum(hystereza_hum, hum_outside, hodnota_hum, norma_hum)
     
     if hodnota_temp == 1 and hodnota_hum == 1:
         hodnota = 1

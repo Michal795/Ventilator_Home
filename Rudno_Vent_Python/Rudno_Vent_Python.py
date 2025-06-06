@@ -1,67 +1,33 @@
-from machine import Pin, PWM
-from time import sleep
-import dht
+import machine, onewire, ds18x20, time
+from machine import Pin
 
-inside = dht.DHT22(Pin(22))
-outside = dht.DHT22(Pin(21))
-spinac = PWM(18, freq=80, duty=0) #pwm output
-#spinac = machine.Pin(18, Pin.OUT)
-hystereza_temp = 2
-hystereza_hum = 6
+ds_pin = machine.Pin(22)
+ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
+spinac = machine.Pin(18, Pin.OUT)
+hystereza_temp = 3
 hodnota_temp = 0
-hodnota_hum = 0
-norma_hum = 80
 
 
-def spinac_def(temp_inside, temp_outside, hystereza, pred_stav):
+def spinac_temp(temp_inside, temp_outside, hystereza, pred_stav): #leto - vonku musi byt chladnejsie, ako vnutri
     spinac_hodnota = pred_stav
-    if month in range(5, 9): #leto
-        if (temp_inside + (hystereza/2)) < temp_outside:
-            spinac_hodnota = 0
-        elif (temp_inside - (hystereza/2)) > temp_outside:
-            spinac_hodnota = 1
-        else:
-            pwm_duty = ((temp_outside - (temp_inside - (hystereza/2)))/hystereza)*1024 # este treba zakomponovat predoslu hodnotu spinaca
-    else: #zima
-        if (temp_inside + (hystereza/2)) > temp_outside:
-            spinac_hodnota = 0
-        elif (temp_inside - (hystereza/2)) < temp_outside:
-            spinac_hodnota = 1
+    if (temp_inside + (hystereza/2)) < temp_outside:
+        spinac_hodnota = 0
+    elif (temp_inside - (hystereza/2)) > temp_outside:
+        spinac_hodnota = 1
     return  spinac_hodnota
 
 
-def spinac_def2(hystereza, humidity, pred_stav, norma):
-    spinac_hodnota = pred_stav
-    if (norma - (hystereza/2)) > humidity:
-        spinac_hodnota = 1
-    elif (norma + (hystereza/2)) < humidity:
-        spinac_hodnota = 0
-    return spinac_hodnota
-
-
 while True:
-    sleep(1)
-    inside.measure()
-    outside.measure()
-    temp_inside = float(inside.temperature())
-    temp_outside = float(outside.temperature())
-    hum_outside = float(outside.humidity())
+    ds_sensor.convert_temp()
+    time.sleep_ms(750)
+    temp_inside = ds_sensor.read_temp(bytearray(b'(R\xb6\xbc\x00\x00\x00\x0e'))
+    temp_outside = ds_sensor.read_temp(bytearray(b'(\xd7\xbe\xbc\x00\x00\x001'))
     print("Inside temp:", temp_inside)
     print("Outside temp:", temp_outside)
-    print("Outside humidity:", hum_outside)
-    hodnota_temp = spinac_def(temp_inside, temp_outside, hystereza_temp, hodnota_temp)
-    hodnota_hum = spinac_def2(hystereza_hum, hum_outside, hodnota_hum, norma_hum)
-    
-    if hodnota_temp == 1 and hodnota_hum == 1:
-        hodnota = 1
-    else:
-        hodnota = 0
-        
-    spinac.value(hodnota)
-    print(f"Hodnota temp: {hodnota_temp}\nHodnota hum: {hodnota_hum}\nSpinac: {hodnota}")
-    
-    ###print('Temperature: %3.1f C' %temp_inside)
-    ###print('Humidity: %3.1f %%' %hum_outside)
-    #hodnota = spinac_def(temp_inside, temp_outside, hystereza)
+    hodnota_temp = spinac_temp(temp_inside, temp_outside, hystereza_temp, hodnota_temp)
+    spinac.value(hodnota_temp)
+    print(f"Hodnota temp: {hodnota_temp}")
+    time.sleep(1)
 
-
+# vonku = bytearray(b'(\xd7\xbe\xbc\x00\x00\x001')
+# vnutri = bytearray(b'(R\xb6\xbc\x00\x00\x00\x0e')
